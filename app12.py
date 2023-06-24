@@ -5,18 +5,28 @@ from flask_session import Session
 from key import secret_key,salt
 from itsdangerous import URLSafeTimedSerializer
 from stoken import token
+import os
 from cmail import sendmail
 app = Flask(__name__)
 app.secret_key=secret_key
 app.config['SESSION_TYPE']='filesystem'
+user=os.environ.get('RDS_USERNAME')
+db=os.environ.get('RDS_DB_NAME')
+password=os.environ.get('RDS_PASSWORD')
+host=os.environ.get('RDS_HOSTNAME')
+port=os.environ.get('RDS_PORT')
+with mysql.connector.connect(host=host,user=user,password=password,port=port,db=db) as conn:
+    cursor=conn.cursor(buffered=True)
+    cursor.execute("create table if not exists users(username varchar(50) primary key,password varchar(15),email varchar(60) unique)")
+    cursor.execute("create table if not exists posts(postid int not null auto_increment primary key,title tinytext,content text,date timestamp default now() on update now(),added_by varchar(50),foreign key(added_by) references users(username))")
+    cursor.close()
+    mydb=mysql.connector.connect(host=host,user=user,password=password,db=db)
 # MySQL database configuration
-mydb = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="admin",
-    database="pnm"
-)
-
+#mydb = mysql.connector.connect(
+  #  host="localhost",
+   # user="root",
+    #password="admin",
+    #database="pnm")
 # Create a cursor object to interact with the database
 cursor = mydb.cursor()
 
@@ -125,5 +135,5 @@ def view():
         return redirect(url_for('login'))
     return "Thank you for your feedback"
    
-    
-app.run(debug=True,use_reloader=True)
+if _name=='main_':
+    app.run()
